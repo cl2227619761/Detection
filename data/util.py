@@ -3,6 +3,8 @@
 1. 读取图片
 """
 import random
+import sys
+sys.path.append("../")
 
 import numpy as np
 from PIL import Image
@@ -38,7 +40,7 @@ def img_normalize(img):
         std=[0.229, 0.224, 0.225]
     )
     img = torch.from_numpy(img)
-    return normalize(img)
+    return normalize(img).numpy()
 
 
 def inverse_normalize(img):
@@ -47,7 +49,7 @@ def inverse_normalize(img):
     return img.clip(min=0, max=1) * 255
 
 
-def preprocess(img, min_size=600, max_size=1000):
+def preprocess(img, min_size=OPT.min_size, max_size=OPT.max_size):
     """图片预处理"""
     C, H, W = img.shape
     scale1 = min_size / min(H, W)

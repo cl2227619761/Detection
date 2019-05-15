@@ -8,8 +8,8 @@ class Config:
     data_dir = "D:/code/faster_rcnn/VOCdevkit/VOC2007/"
     min_size = 600
     max_size = 1000
-    train_split = "trainval"
-    val_split = "val"
+    train_split = "train"
+    valtest_split = "valtest"
 
 
 OPT = Config()
