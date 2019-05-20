@@ -65,8 +65,8 @@ def loc2bbox(base_box, locs):
     d_h = locs[:, 2::4]
     d_w = locs[:, 3::4]
 
-    ctr_y = d_y * base_h[:, np.newaxis] + base_ctr_y
-    ctr_x = d_x * base_w[:, np.newaxis] + base_ctr_x
+    ctr_y = d_y * base_h[:, np.newaxis] + base_ctr_y[:, np.newaxis]
+    ctr_x = d_x * base_w[:, np.newaxis] + base_ctr_x[:, np.newaxis]
     height = np.exp(d_h) * base_h[:, np.newaxis]
     width = np.exp(d_w) * base_w[:, np.newaxis]
 

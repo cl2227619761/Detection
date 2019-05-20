@@ -2,12 +2,17 @@
 关于候选框的产生
 """
 import numpy as np
-
-from bbox_tools import loc2bbox
+from utils.bbox_tools import loc2bbox
+from utils.nms import non_maximum_suppression
 
 
 class ProposalCreator:
-    """候选框的产生"""
+    """
+    候选框的产生
+    这是由rpn预测出来的偏移量先换算为坐标框；
+    然后利用非极大值抑制从中筛选出一些坐标框作为候选框，
+    用于训练fast rcnn网络
+    """
 
     def __init__(
             self,
@@ -51,15 +56,15 @@ class ProposalCreator:
         roi_h = roi[:, 2] - roi[:, 0]
         roi_w = roi[:, 3] - roi[:, 1]
         keep = np.where((roi_h >= min_size) & (roi_w >= min_size))[0]
-        roi = roi[keep]
+        roi = roi[keep, :]
         score = score[keep]
         # 这是nms之前的选取，按照得分的高低进行排序，是前景的得分
         order = score.ravel().argsort()[::-1]
         if n_pre_nms > 0:
             order = order[:n_pre_nms]
-        roi = roi[order]
-
-
-
-
-
+        roi = roi[order, :]
+        keep = non_maximum_suppression(roi, thresh=self.nms_thresh)
+        if n_post_nms > 0:
+            keep = keep[:n_post_nms]
+        roi = roi[keep]
+        return roi
