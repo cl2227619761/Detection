@@ -2,6 +2,7 @@
 非极大值抑制的相关脚本
 """
 import numpy as np
+import cupy as cp
 
 
 def non_maximum_suppression(bbox, thresh, score=None, limit=None):
@@ -17,7 +18,7 @@ def non_maximum_suppression(bbox, thresh, score=None, limit=None):
     if score is not None:
         order = score.argsort()[::-1].astype(np.int32)
     else:
-        order = np.arange(n_bbox, dtype=np.int32)
+        order = cp.arange(n_bbox, dtype=np.int32)
     keep = []
 
     # 预测框之间进行两两比较，去除重叠面积iou大于thresh的框
@@ -25,17 +26,17 @@ def non_maximum_suppression(bbox, thresh, score=None, limit=None):
         i = order[0]
         keep.append(i)
 
-        xx1 = np.maximum(bbox_x1[i], bbox_x1[order[1:]])
-        yy1 = np.maximum(bbox_y1[i], bbox_y1[order[1:]])
-        xx2 = np.minimum(bbox_x2[i], bbox_x2[order[1:]])
-        yy2 = np.minimum(bbox_y2[i], bbox_y2[order[1:]])
+        xx1 = cp.maximum(bbox_x1[i], bbox_x1[order[1:]])
+        yy1 = cp.maximum(bbox_y1[i], bbox_y1[order[1:]])
+        xx2 = cp.minimum(bbox_x2[i], bbox_x2[order[1:]])
+        yy2 = cp.minimum(bbox_y2[i], bbox_y2[order[1:]])
 
-        width = np.maximum(0., (xx2 - xx1 + 1))
-        height = np.maximum(0., (yy2 - yy1 + 1))
+        width = cp.maximum(0., (xx2 - xx1 + 1))
+        height = cp.maximum(0., (yy2 - yy1 + 1))
         inter = width * height
         iou = inter / (area[i] + area[order[1:]] - inter)
-        index = np.where(iou <= thresh)[0]
+        index = cp.where(iou <= thresh)[0]
         order = order[index + 1]
     if limit is not None:
         keep = keep[:limit]
-    return keep
+    return cp.asnumpy(keep)

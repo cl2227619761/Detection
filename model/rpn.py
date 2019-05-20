@@ -73,7 +73,6 @@ class RegionProposalNetwork(nn.Module):
         rpn_fg_scores = rpn_softmax_scores[..., 1].contiguous()
         rpn_fg_scores = rpn_fg_scores.view(num, -1)
         rpn_scores = rpn_scores.view(num, -1, 2)
-        import ipdb; ipdb.set_trace()
 
         rois = list()
         roi_indices = list()

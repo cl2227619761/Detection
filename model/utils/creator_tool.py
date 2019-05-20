@@ -2,6 +2,8 @@
 关于候选框的产生
 """
 import numpy as np
+import cupy as cp
+
 from utils.bbox_tools import loc2bbox
 from utils.nms import non_maximum_suppression
 
@@ -63,8 +65,14 @@ class ProposalCreator:
         if n_pre_nms > 0:
             order = order[:n_pre_nms]
         roi = roi[order, :]
-        keep = non_maximum_suppression(roi, thresh=self.nms_thresh)
+        keep = non_maximum_suppression(
+            cp.ascontiguousarray(cp.asarray(roi)),
+            thresh=self.nms_thresh
+        )
         if n_post_nms > 0:
             keep = keep[:n_post_nms]
+        for i in range(keep.size):
+            keep[i] = keep[i].tolist()
+        keep = np.int32(keep)
         roi = roi[keep]
         return roi

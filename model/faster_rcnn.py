@@ -41,5 +41,25 @@ class FasterRCNN(nn.Module):
         self.loc_normalize_mean = loc_normalize_mean
         self.loc_normalize_std = loc_normalize_std
 
-    def forward(self, x):
+    def forward(self, x, scale=1.):
+        """
+        参数：
+            x: 输入的图像
+        """
+        img_size = x.shape[2:]
+
         features = self.extractor(x)
+        rpn_locs, rpn_scores, rois, roi_indices, anchors = self.rpn(
+            features, img_size, scale
+        )
+        roi_cls_locs, roi_scores = self.head(features, rois, roi_indices)
+        return roi_cls_locs, roi_scores, rois, roi_indices
+
+    def use_preset(self, preset):
+        """作用是在不同的过程中改变nms的阈值以及score的阈值，舍弃掉低分的框"""
+        if preset == "visualize":
+            self.nms_thresh = 0.3
+            self.score_thresh = 0.7
+        elif preset == "evaluate":
+            self.nms_thresh = 0.3
+            self.score_thresh = 0.05
