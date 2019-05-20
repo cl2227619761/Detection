@@ -49,6 +49,9 @@ class VGG16RoIHead(nn.Module):
         return roi_cls_locs, roi_scores
 
 
+class FasterRCNNVGG16()
+
+
 def normal_init(layer, mean, std):
     """初始化方式"""
     layer.weight.data.normal_(mean, std)

@@ -63,3 +63,7 @@ class FasterRCNN(nn.Module):
         elif preset == "evaluate":
             self.nms_thresh = 0.3
             self.score_thresh = 0.05
+        else:
+            raise ValueError("preset必须取visualize或者evaluate")
+
+    
