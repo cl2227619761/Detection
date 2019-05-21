@@ -18,5 +18,8 @@ class Config:
     # 网络相关
     sub_sample = 16
 
+    # 特征提取网络相关
+    use_drop=False  # 是否使用dropout
+
 
 OPT = Config()

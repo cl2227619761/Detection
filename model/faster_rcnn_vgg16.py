@@ -1,11 +1,36 @@
 """
 vgg16作为特征提取网络的faster rcnn
 """
+import sys
+sys.path.append("../")
 import torch
 import torch.nn as nn
+from torchvision.models import vgg16
 import numpy as np
 
 from roi_module import RoIPooling2D
+from faster_rcnn import FasterRCNN
+
+from lib.config import OPT
+from rpn import RegionProposalNetwork
+
+
+def decom_vgg16():
+    """特征提取网络"""
+    model = vgg16(pretrained=True)
+    features = list(model.features)[:30]  # vgg16的特征提取部分
+    classifier = list(model.classifier)
+    del classifier[6]
+    # 如果不使用dropout
+    if not OPT.use_drop:
+        del classifier[5]
+        del classifier[2]
+    classifier = nn.Sequential(*classifier)
+    # 冻结前4个conv层
+    for layer in features[:10]:
+        for p in layer.parameters():
+            p.requires_grad = False
+    return nn.Sequential(*features), classifier
 
 
 class VGG16RoIHead(nn.Module):
@@ -49,7 +74,22 @@ class VGG16RoIHead(nn.Module):
         return roi_cls_locs, roi_scores
 
 
-class FasterRCNNVGG16()
+class FasterRCNNVGG16(FasterRCNN):
+    """继承基类FasterRCNN定制专门的网络"""
+
+    feat_stride = 16
+
+    def __init__(self, n_fg_class=20):
+        extractor, classifier = decom_vgg16()
+
+        rpn = RegionProposalNetwork()
+        head = VGG16RoIHead(
+            n_class=n_fg_class + 1, roi_size=7,
+            spatial_scale=1. / self.feat_stride, classifier=classifier
+        )
+        super(FasterRCNNVGG16, self).__init__(
+            extractor=extractor, rpn=rpn, head=head
+        )
 
 
 def normal_init(layer, mean, std):
@@ -67,3 +107,14 @@ def totensor(data, cuda=True):
     if cuda:
         tensor = tensor.cuda()
     return tensor
+
+
+def main():
+    """调试用函数"""
+    faster_rcnn = FasterRCNNVGG16().cuda()
+    import ipdb; ipdb.set_trace()
+    print(faster_rcnn.n_class)
+
+
+if __name__ == "__main__":
+    main()
