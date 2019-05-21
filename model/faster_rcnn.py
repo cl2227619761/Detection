@@ -9,9 +9,11 @@ sys.path.append("../")
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from data.util import preprocess
 from utils.array_tool import tonumpy, totensor
+from utils.bbox_tools import loc2bbox
 
 
 def nograd(func):
@@ -108,7 +110,6 @@ class FasterRCNN(nn.Module):
         scores = list()  # 用于放置预测框类别得分
         for img, size in zip(prepared_imgs, sizes):
             # 将图片数组转变为[N, C, H, W]的张量，并为float类型
-            import ipdb; ipdb.set_trace()
             img = totensor(img[None]).float()
             scale = img.shape[3] / size[1]  # 处理后的图片的W除以原始图片的W
             # 将图像和缩放比例代入前向传播过程得到预测的偏移量，预测得分，候选框
@@ -126,6 +127,26 @@ class FasterRCNN(nn.Module):
             std = torch.Tensor(self.loc_normalize_std).cuda().repeat(
                 self.n_class
             )[None]
-            return roi_cls_loc, roi_score
+            # 经过标准差和均值之后的预测偏移量和缩放量
+            roi_cls_loc = roi_cls_loc * std + mean
+            # 对偏移量和缩放量进行变形，目的是借此将roi变成相应的形状
+            roi_cls_loc = roi_cls_loc.view(-1, self.n_class, 4)
+            roi = roi.view(-1, 1, 4).expand_as(roi_cls_loc)
+            # 将相对于roi的偏移量和缩放量roi_cls_loc换算为对应的坐标
+            # 需要注意的是需要将roi和roi_cls_loc的形状再次变为4列的形式
+            cls_bbox = loc2bbox(
+                base_box=tonumpy(roi).reshape(-1, 4),
+                locs=tonumpy(roi_cls_loc).reshape(-1, 4)
+            )
+            cls_bbox = totensor(cls_bbox)  # 现在的cls_bbox是4列
+            # 变形：每行是84列，其中每4列对应一个类别的框(y1, x1, y2, x2)
+            cls_bbox = cls_bbox.view(-1, self.n_class * 4)
+            # 将框超出边界的部分裁剪掉
+            cls_bbox[:, 0::2] = cls_bbox[:, 0::2].clamp(min=0, max=size[0])
+            cls_bbox[:, 1::2] = cls_bbox[:, 1::2].clamp(min=0, max=size[1])
+            # 接下来是score，softmax之前每一行有21个值，所以dim=1
+            prob = tonumpy(data=F.softmax(totensor(data=roi_score), dim=1))
 
-
+            raw_cls_bbox = tonumpy(data=cls_bbox)
+            raw_prob = tonumpy(data=prob)
+            return raw_cls_bbox, raw_prob
