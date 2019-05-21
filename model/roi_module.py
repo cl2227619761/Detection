@@ -30,3 +30,4 @@ class RoIPooling2D(nn.Module):
             output.append(self.adaptive_max_pool(roi_feature))
         output = torch.cat(output, 0)
         return output
+
