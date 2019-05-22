@@ -18,8 +18,16 @@ class Config:
     # 网络相关
     sub_sample = 16
 
+    # 分类相关
+    n_fg_class = 20  # 前景类别的总数量
+
     # 特征提取网络相关
-    use_drop=False  # 是否使用dropout
+    use_drop = False  # 是否使用dropout
+
+    # 网络超参数
+    lr = 1e-3
+    weight_decay = 0.0005  # 权重衰减
+    use_adam = False  # 是否使用adam优化器
 
 
 OPT = Config()
