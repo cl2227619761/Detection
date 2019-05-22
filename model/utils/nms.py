@@ -36,7 +36,7 @@ def non_maximum_suppression(bbox, thresh, score=None, limit=None):
         inter = width * height
         iou = inter / (area[i] + area[order[1:]] - inter)
         index = cp.where(iou <= thresh)[0]
-        order = order[index + 1]
+        order = order[(index + 1).tolist()]
     if limit is not None:
         keep = keep[:limit]
     return cp.asnumpy(keep)
