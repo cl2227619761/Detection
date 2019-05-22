@@ -80,26 +80,26 @@ def loc2bbox(base_box, locs):
 
 
 # 由坐标换算为偏移量
-def bbox2loc(box, base_box):
+def bbox2loc(src_bbox, dst_bbox):
     """将坐标变为偏移量"""
-    box_h = box[:, 2] - box[:, 0]
-    box_w = box[:, 3] - box[:, 1]
-    box_ctr_y = box[:, 0] + 0.5 * box_h
-    box_ctr_x = box[:, 1] + 0.5 * box_w
+    box_h = src_bbox[:, 2] - src_bbox[:, 0]
+    box_w = src_bbox[:, 3] - src_bbox[:, 1]
+    box_ctr_y = src_bbox[:, 0] + 0.5 * box_h
+    box_ctr_x = src_bbox[:, 1] + 0.5 * box_w
 
-    base_box_h = base_box[:, 2] - base_box[:, 0]
-    base_box_w = base_box[:, 3] - base_box[:, 1]
-    base_box_y = base_box[:, 0] + 0.5 * base_box_h
-    base_box_x = base_box[:, 1] + 0.5 * base_box_w
+    base_box_h = dst_bbox[:, 2] - dst_bbox[:, 0]
+    base_box_w = dst_bbox[:, 3] - dst_bbox[:, 1]
+    base_box_y = dst_bbox[:, 0] + 0.5 * base_box_h
+    base_box_x = dst_bbox[:, 1] + 0.5 * base_box_w
 
-    eps = np.finfo(base_box_h.dtype).eps
-    base_box_h = np.maximum(base_box_h, eps)
-    base_box_w = np.maximum(base_box_w, eps)
+    eps = np.finfo(box_h.dtype).eps
+    box_h = np.maximum(box_h, eps)
+    box_w = np.maximum(box_w, eps)
 
-    d_y = (box_ctr_y - base_box_y) / base_box_h
-    d_x = (box_ctr_x - base_box_x) / base_box_h
-    d_h = np.log(box_h / base_box_h)
-    d_w = np.log(box_w / base_box_w)
+    d_y = (base_box_y - box_ctr_y) / box_h
+    d_x = (base_box_x - box_ctr_x) / box_w
+    d_h = np.log(base_box_h / box_h)
+    d_w = np.log(base_box_w / box_w)
 
     res = np.stack((d_y, d_x, d_h, d_w), axis=1)
     return res
