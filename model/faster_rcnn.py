@@ -10,10 +10,15 @@ sys.path.append("../")
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
+import cupy as cp
+import numpy as np
 
 from data.util import preprocess
 from utils.array_tool import tonumpy, totensor
 from utils.bbox_tools import loc2bbox
+from utils.nms import non_maximum_suppression
+from lib.config import OPT
 
 
 def nograd(func):
@@ -85,6 +90,40 @@ class FasterRCNN(nn.Module):
         else:
             raise ValueError("preset必须取visualize或者evaluate")
 
+    def _supress(self, raw_cls_bbox, raw_prob):
+        """对predict产生的raw_cls_bbox和raw_prob进行进一步的筛选，筛选依据是
+        设定的score_thresh
+        """
+        bbox = list()  # 存放筛选出的框坐标
+        label = list()  # 存放筛选出的框的标签
+        score = list()  # 存放筛选出的框的类别得分
+        for l in range(1, self.n_class):
+            # 避开背景类，背景类为0，所以从1开始
+            # cls_bbox_l是某一类的所有框的坐标
+            cls_bbox_l = raw_cls_bbox.reshape((-1, self.n_class, 4))[:, l, :]
+            prob_l = raw_prob[:, l]  # 某一类的所有框的得分
+            mask = prob_l > self.score_thresh  # 得分大于分数阈值的框索引
+            # 通过得分阈值筛选预测框和其得分
+            cls_bbox_l = cls_bbox_l[mask]
+            prob_l = prob_l[mask]
+            # 再通过nms进行一次筛选
+            keep = non_maximum_suppression(
+                bbox=cp.array(cls_bbox_l), thresh=self.nms_thresh,
+                score=prob_l
+            )
+            keep = np.int32(keep)
+            for i in range(keep.size):
+                keep[i] = keep[i].tolist()
+            bbox.append(cls_bbox_l[keep])  # 要保留的预测框坐标
+            # 因为类别名称里面没有写backgroud，所以第0个是第一类，所以l要减去1
+            label.append((l - 1) * np.ones((len(keep),)))  # 对应框的标签
+            score.append(prob_l[keep])  # 对应框的得分
+        # 将bbox, label, score整理为数组形式
+        bbox = np.concatenate(bbox, axis=0).astype(np.float32)
+        label = np.concatenate(label, axis=0).astype(np.int32)
+        score = np.concatenate(score, axis=0).astype(np.float32)
+        return bbox, label, score
+
     @nograd
     def predict(self, imgs, sizes=None, visualize=False):
         """预测过程
@@ -103,6 +142,7 @@ class FasterRCNN(nn.Module):
                 prepared_imgs.append(img)  # 得到处理后的图片
                 sizes.append(size)  # 注意这是未经处理的原始图片的尺寸
         else:
+            self.use_preset("evaluate")
             prepared_imgs = imgs  # 如果不做处理就使用原始图片
 
         bboxes = list()  # 用于放置预测框的坐标
@@ -147,6 +187,48 @@ class FasterRCNN(nn.Module):
             # 接下来是score，softmax之前每一行有21个值，所以dim=1
             prob = tonumpy(data=F.softmax(totensor(data=roi_score), dim=1))
 
-            raw_cls_bbox = tonumpy(data=cls_bbox)
-            raw_prob = tonumpy(data=prob)
-            return raw_cls_bbox, raw_prob
+            raw_cls_bbox = tonumpy(data=cls_bbox)  # (N, 84)
+            raw_prob = tonumpy(data=prob)  # (N, 21)
+
+            # 返回bbox, label, score
+            bbox, label, score = self._supress(
+                raw_cls_bbox=raw_cls_bbox, raw_prob=raw_prob
+            )
+            bboxes.append(bbox)
+            labels.append(label)
+            scores.append(score)
+        self.use_preset("evaluate")
+        self.train()
+        return bboxes, labels, scores
+
+    def get_optimizer(self):
+        """优化器"""
+        lr = OPT.lr  # 初始学习率
+        params = []  # 存放要优化的参数
+        for key, value in dict(self.named_parameters()).items():
+            # 优化那些可优化的参数，requires_grad=True的参数
+            if value.requires_grad:
+                # bias和weight的学习率及衰减不一样
+                if "bias" in key:
+                    params += [{
+                        "params": [value],
+                        "lr": lr * 2,
+                        "weight_decay": 0
+                    }]
+                else:
+                    params += [{
+                        "params": [value],
+                        "lr": lr,
+                        "weight_decay": OPT.weight_decay
+                    }]
+        if OPT.use_adam:
+            self.optimizer = optim.Adam(params)
+        else:
+            self.optimizer = optim.SGD(params, momentum=0.9)
+        return self.optimizer
+
+    def scale_lr(self, decay=0.1):
+        """学习率的衰减"""
+        for param_group in self.optimizer.param_groups:
+            param_group["lr"] *= decay
+        return self.optimizer
