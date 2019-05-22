@@ -105,13 +105,34 @@ def bbox2loc(box, base_box):
     return res
 
 
+def bbox_iou(bbox_a, bbox_b):
+    """计算相交框的iou"""
+    if bbox_a.shape[1] != 4 or bbox_b.shape[1] != 4:
+        raise IndexError("框的坐标必须时4列")
+    # 相交的框的左上角的坐标(y1, x1)
+    # 这种变形的目的是用a和每个b进行比较
+    t_l = np.maximum(bbox_a[:, None, :2], bbox_b[:, :2])
+    # 相交的框的右下角的坐标(y2, x2)
+    b_r = np.minimum(bbox_a[:, None, 2:], bbox_b[:, 2:])
+    # 相交部分的面积
+    area_i = np.prod(b_r - t_l, axis=2) * (t_l < b_r).all(axis=2)
+    # bbox_a的面积
+    area_a = np.prod(bbox_a[:, 2:] - bbox_a[:, :2], axis=1)
+    # bbox_b的面积
+    area_b = np.prod(bbox_b[:, 2:] - bbox_b[:, :2], axis=1)
+    # 计算iou
+    iou = area_i / (area_a[:, None] + area_b - area_i)
+    return iou
+
+
 def main():
     """调试用函数"""
     box = np.random.normal(2, size=(5, 4))
-    base_box = np.random.normal(6, size=(5, 4))
-    res = bbox2loc(box, base_box)
-    print("ok")
+    base_box = np.random.normal(2, size=(2, 4))
+    # res = bbox2loc(box, base_box)
+    # print("ok")
     import ipdb; ipdb.set_trace()
+    iou = bbox_iou(box, base_box)
 
 
 if __name__ == "__main__":
