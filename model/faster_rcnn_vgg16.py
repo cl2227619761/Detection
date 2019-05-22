@@ -46,16 +46,15 @@ class VGG16RoIHead(nn.Module):
         # n_class包含了背景在内
         super(VGG16RoIHead, self).__init__()
 
+        self.n_class = n_class
+        self.roi_size = roi_size
+        self.spatial_scale = spatial_scale
+        self.roi = RoIPooling2D(roi_size, roi_size, self.spatial_scale)
         self.classifier = classifier
         self.cls_loc = nn.Linear(4096, n_class * 4)
         self.score = nn.Linear(4096, n_class)
         normal_init(self.cls_loc, 0, 0.001)
         normal_init(self.score, 0, 0.01)
-
-        self.n_class = n_class
-        self.roi_size = roi_size
-        self.spatial_scale = spatial_scale
-        self.roi = RoIPooling2D(roi_size, roi_size, self.spatial_scale)
 
     def forward(self, x, rois, roi_indices):
         # 以防出现ndarray
@@ -79,7 +78,7 @@ class FasterRCNNVGG16(FasterRCNN):
 
     feat_stride = 16
 
-    def __init__(self, n_fg_class=20):
+    def __init__(self, n_fg_class=OPT.n_fg_class):
         extractor, classifier = decom_vgg16()
 
         rpn = RegionProposalNetwork()
@@ -112,6 +111,9 @@ def totensor(data, cuda=True):
 def main():
     """调试用函数"""
     faster_rcnn = FasterRCNNVGG16().cuda()
+    img = np.random.randn(3, 800, 800)
+    size = (800, 800)
+    bboxes, labels, scores = faster_rcnn.predict([img], [size])
     import ipdb; ipdb.set_trace()
     print(faster_rcnn.n_class)
 
