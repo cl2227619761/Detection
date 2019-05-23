@@ -8,6 +8,7 @@ sys.path.append("./")
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 import numpy as np
 
@@ -52,15 +53,20 @@ class FasterRCNNTrainer(nn.Module):
 
         # 训练过程中的一些评估指标
         # rpn过程的评估指标--混淆矩阵
-        rpn_cm = ConfusionMeter(2)  # 只有前景和背景两类
+        self.rpn_cm = ConfusionMeter(2)  # 只有前景和背景两类
         # fast rcnn过程的评估指标--混淆矩阵
-        roi_cm = ConfusionMeter(OPT.n_fg_class + 1)  # 前景类别数+背景类
+        self.roi_cm = ConfusionMeter(OPT.n_fg_class + 1)  # 前景类别数+背景类
         # 损失函数--average loss
         # 每个损失函数都运用一个averagevaluemeter进行求平均
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}
 
     def forward(self, imgs, bboxes, labels, scale):
         """前向传播过程计算损失
+        参数：
+            imgs: [N, C, H, W]
+            bboxes: [N, R, 4]
+            labels: [N, R]
+            scale: 单个值就可以
         返回：5个损失"""
         num_batch = bboxes.shape[0]
         if num_batch != 1:
@@ -107,7 +113,41 @@ class FasterRCNNTrainer(nn.Module):
             pred_loc=rpn_loc, gt_loc=gt_rpn_loc,
             gt_label=gt_rpn_label.data, sigma=self.rpn_sigma
         )
-        return rpn_loc_loss
+        rpn_cls_loss = F.cross_entropy(
+            input=rpn_score, target=gt_rpn_label.cuda(), ignore_index=-1
+        )
+        # 除了标签为-1之外的真实标签
+        _gt_rpn_label = gt_rpn_label[gt_rpn_label > -1]
+        _rpn_score = tonumpy(data=rpn_score)[
+            tonumpy(data=gt_rpn_label) > -1
+        ]
+        self.rpn_cm.add(
+            predicted=totensor(data=_rpn_score, cuda=False),
+            target=_gt_rpn_label.data.long()
+        )
+
+        # ---------------------roi loss---------------------------------------#
+        n_sample = roi_cls_loc.shape[0]
+        roi_cls_loc = roi_cls_loc.view(n_sample, -1, 4)
+        # 取出gt_roi_label对应的预测框的预测偏移量
+        roi_loc = roi_cls_loc[
+            torch.arange(0, n_sample), totensor(data=gt_roi_label).long()
+        ]
+        gt_roi_loc = totensor(data=gt_roi_loc)
+        gt_roi_label = totensor(data=gt_roi_label).long()
+        roi_loc_loss = _faster_rcnn_loc_loss(
+            pred_loc=roi_loc.contiguous(),
+            gt_loc=gt_roi_loc, gt_label=gt_roi_label.data,
+            sigma=self.roi_sigma
+        )
+        roi_cls_loss = nn.CrossEntropyLoss()(roi_score, gt_roi_label.cuda())
+        self.roi_cm.add(
+            predicted=totensor(roi_score, False),
+            target=gt_roi_label.data.long()
+        )
+        losses = [rpn_loc_loss, rpn_cls_loss, roi_loc_loss, roi_cls_loss]
+        losses = losses + [sum(losses)]
+        return LossTuple(*losses)
 
 
 def _smooth_l1_loss(x, t, in_weight, sigma):
@@ -144,10 +184,10 @@ def main():
     img = torch.from_numpy(img[None]).cuda()
     bbox = np.array([[10, 20, 30, 40], [20, 30, 40, 50]]).astype(np.float32)
     bbox = torch.from_numpy(bbox[None]).cuda()
-    label = np.array([[1], [2]], dtype=np.int32)
+    label = np.array([1, 2], dtype=np.int32)
     label = torch.from_numpy(label[None]).cuda()
     scale = 1.
-    rpn_loc_loss = trainer(img, bbox, label, scale)
+    losses = trainer(img, bbox, label, scale)
     import ipdb; ipdb.set_trace()
     print("ok")
 
