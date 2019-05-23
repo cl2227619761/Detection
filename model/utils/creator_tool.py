@@ -217,7 +217,7 @@ class ProposalTargetCreator:
             loc_normalize_mean=(0., 0., 0., 0.),
             loc_normalize_std=(0.1, 0.1, 0.2, 0.2)
     ):
-        roi = np.concatenate(roi, bbox, axis=0)
+        roi = np.concatenate((roi, bbox), axis=0)
         # 图片上要抽取的阳性框个数
         pos_roi_per_img = np.round(self.n_sample * self.pos_ratio)
         # 计算和真实框的iou
@@ -225,7 +225,7 @@ class ProposalTargetCreator:
         # 和roi的iou较大的那个真实框的索引
         gt_assignment = iou.argmax(axis=1)
         # 那个较大的iou是多少
-        max_iou = iou.argmax(axis=1)
+        max_iou = iou.max(axis=1)
         # 去除背景类?
         gt_roi_label = label[gt_assignment] + 1
 
