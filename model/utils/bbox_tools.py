@@ -48,6 +48,7 @@ def enumerate_anchors(anchor_base, sub_sample, height, width):
     num_anchors = shift.shape[0]
     anchors = anchor_base.reshape((1, n_per_anchor, 4)) + \
         shift.reshape((1, num_anchors, 4)).transpose((1, 0, 2))
+    anchors = anchors.astype(np.float32)
     anchors = anchors.reshape((n_per_anchor * num_anchors, 4))
     return anchors
 
