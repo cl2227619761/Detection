@@ -28,6 +28,9 @@ class Config:
     lr = 1e-3
     weight_decay = 0.0005  # 权重衰减
     use_adam = False  # 是否使用adam优化器
+    # 损失计算相关的超参数，这样设置的用意是什么？
+    rpn_sigma = 3.
+    roi_sigma = 1.
 
 
 OPT = Config()
