@@ -7,8 +7,8 @@ from __future__ import print_function
 import sys
 sys.path.append("../")
 
-from bbox_dataset import BboxDataset
-from util import Transform, preprocess
+from data.bbox_dataset import BboxDataset
+from data.util import Transform, preprocess
 from lib.config import OPT
 
 
@@ -32,7 +32,10 @@ class Dataset:
         img, bbox, label, scale = self.transform(
             in_data=(ori_img, bbox, label)
         )
-        return img, bbox, label, scale
+        # 这里copy的目的是为了防止出现ValueError: some of the strides of
+        # a given numpy array are negative. This is currently not supported,
+        # but will be added in future releases的错误
+        return img.copy(), bbox.copy(), label.copy(), scale
 
 
 class TestDataset:

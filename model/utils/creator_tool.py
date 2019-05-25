@@ -4,8 +4,8 @@
 import numpy as np
 import cupy as cp
 
-from utils.bbox_tools import loc2bbox, bbox2loc, bbox_iou
-from utils.nms import non_maximum_suppression
+from model.utils.bbox_tools import loc2bbox, bbox2loc, bbox_iou
+from model.utils.nms import non_maximum_suppression
 
 
 class ProposalCreator:
@@ -160,6 +160,7 @@ class AnchorTargetCreator:
             2. 这些iou是多少
             3. 和真实框具有最大iou的锚点框索引"""
         iou = bbox_iou(anchor, bbox)
+        # import ipdb; ipdb.set_trace()
         # 和锚点框具有较大iou的真实框的索引
         argmax_iou = iou.argmax(axis=1)
         # 得到inside_index个这些较大的iou

@@ -9,8 +9,8 @@ import torch.nn.functional as F
 import numpy as np
 sys.path.append("../")
 
-from utils.bbox_tools import generate_anchor_base, enumerate_anchors
-from utils.creator_tool import ProposalCreator
+from model.utils.bbox_tools import generate_anchor_base, enumerate_anchors
+from model.utils.creator_tool import ProposalCreator
 from lib.config import OPT
 
 

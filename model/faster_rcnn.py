@@ -15,9 +15,9 @@ import cupy as cp
 import numpy as np
 
 from data.util import preprocess
-from utils.array_tool import tonumpy, totensor
-from utils.bbox_tools import loc2bbox
-from utils.nms import non_maximum_suppression
+from model.utils.array_tool import tonumpy, totensor
+from model.utils.bbox_tools import loc2bbox
+from model.utils.nms import non_maximum_suppression
 from lib.config import OPT
 
 

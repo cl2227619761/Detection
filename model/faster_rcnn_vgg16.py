@@ -8,11 +8,11 @@ import torch.nn as nn
 from torchvision.models import vgg16
 import numpy as np
 
-from roi_module import RoIPooling2D
-from faster_rcnn import FasterRCNN
+from model.roi_module import RoIPooling2D
+from model.faster_rcnn import FasterRCNN
 
 from lib.config import OPT
-from rpn import RegionProposalNetwork
+from model.rpn import RegionProposalNetwork
 
 
 def decom_vgg16():
