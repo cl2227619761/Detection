@@ -12,6 +12,35 @@ from data.dataset import Dataset, TestDataset
 from model.faster_rcnn_vgg16 import FasterRCNNVGG16
 from model.utils.array_tool import scalar
 from trainer import FasterRCNNTrainer
+from lib.eval_tool import calc_map
+
+
+def evaluate(dataloader, faster_rcnn, test_num=10000):
+    """测试过程"""
+    pred_bboxes, pred_labels, pred_scores = list(), list(), list()
+    gt_bboxes, gt_labels, gt_difficults = list(), list(), list()
+    # 遍历测试集或者验证集
+    for ii, (
+        imgs, sizes, gt_bboxes_, gt_labels_, gt_difficults_
+    ) in pb.progressbar(enumerate(dataloader), max_value=len(dataloader)):
+        sizes = [sizes[0][0].item(), sizes[1][0].item()]
+        pred_bboxes_, pred_labels_, pred_scores_ = faster_rcnn.predict(
+            imgs, [sizes]
+        )
+        gt_bboxes += list(gt_bboxes_.numpy())
+        gt_labels += list(gt_labels_.numpy())
+        gt_difficults += list(gt_difficults_.numpy())
+        pred_bboxes += pred_bboxes_
+        pred_labels += pred_labels_
+        pred_scores += pred_scores_
+        if ii == test_num:
+            break
+    results = calc_map(
+        pred_bboxes=pred_bboxes, pred_labels=pred_labels,
+        pred_scores=pred_scores, gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels, gt_difficults=gt_difficults
+    )
+    return results
 
 
 def train(**kwargs):
@@ -55,7 +84,17 @@ def train(**kwargs):
 
 def main():
     """调试"""
-    train()
+    # train()
+    testset = TestDataset(opt=OPT)
+    test_dataloader = DataLoader(
+        dataset=testset, batch_size=1, shuffle=False,
+        num_workers=OPT.num_workers, pin_memory=True
+    )
+    faster_rcnn = FasterRCNNVGG16()
+    print("模型加载完成")
+    trainer = FasterRCNNTrainer(faster_rcnn).cuda()
+    result = evaluate(test_dataloader, faster_rcnn, test_num=10)
+    import ipdb; ipdb.set_trace()
 
 
 if __name__ == "__main__":
