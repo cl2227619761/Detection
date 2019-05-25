@@ -2,7 +2,9 @@
 为了方便训练过程，把训练的过程写成了一个类
 """
 from collections import namedtuple
+import time
 import sys
+import os
 sys.path.append("./model/")
 sys.path.append("./")
 
@@ -13,7 +15,7 @@ from torchnet.meter import ConfusionMeter, AverageValueMeter
 import numpy as np
 
 from utils.creator_tool import AnchorTargetCreator, ProposalTargetCreator
-from utils.array_tool import tonumpy, totensor
+from utils.array_tool import tonumpy, totensor, scalar
 from model.faster_rcnn_vgg16 import FasterRCNNVGG16
 from lib.config import OPT
 
@@ -148,6 +150,83 @@ class FasterRCNNTrainer(nn.Module):
         losses = [rpn_loc_loss, rpn_cls_loss, roi_loc_loss, roi_cls_loss]
         losses = losses + [sum(losses)]
         return LossTuple(*losses)
+
+    def train_step(self, imgs, bboxes, labels, scale):
+        """训练过程"""
+        # 梯度清零
+        self.optimizer.zero_grad()
+        # 得到损失
+        losses = self.forward(imgs, bboxes, labels, scale)
+        # 总损失反向传播
+        losses.total_loss.backward()
+        # 更新梯度
+        self.optimizer.step()
+        # 累加各个损失函数
+        self.update_meters(losses)
+        return losses  # 返回损失
+
+    def update_meters(self, losses):
+        """对各个损失分别求均值"""
+        # 由于train_step返回的是nametuple形式的损失，所以要先变成字典
+        loss_dict = {k: scalar(v) for k, v in losses._asdict().items()}
+        # 分别遍历每种损失，求其均值
+        for key, meter in self.meters.items():
+            meter.add(loss_dict[key])
+
+    def reset_meters(self):
+        # 将损失值清零，用在一个epoch之后
+        for key, meter in self.meters.items():
+            meter.reset()
+        self.rpn_cm.reset()
+        self.roi_cm.reset()
+
+    def get_meter_data(self):
+        # 获取损失值
+        return {k: v.value()[0] for k, v in self.meters.items()}
+
+    def save(self, save_optimizer=False, save_path=None, **kwargs):
+        """保存模型，并返回模型保存的路径"""
+        save_dict = dict()  # 要存储的信息
+
+        # 模型权重和偏置参数
+        save_dict["model"] = self.faster_rcnn.state_dict()
+        # 配置文件
+        save_dict["config"] = OPT._state_dict()
+        # 其他信息，如果写其他信息的话则保存
+        save_dict["other_info"] = kwargs
+
+        if save_optimizer:
+            # 如果要保存优化器的参数信息，则把其加入save_dict中
+            save_dict["optimizer"] = self.optimizer.state_dict()
+        # 如果保存路径为None，则由时间戳自动生成
+        if save_path is None:
+            timestr = time.strftime("%m%d%H%M")
+            save_path = "checkpoints/fasterrcnn_%s" % timestr
+            for k_, v_ in kwargs.items():
+                save_path += "_%s" % v_
+        # 存储路径
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        # 进行存储
+        torch.save(save_dict, save_path)
+        return save_path
+
+    def load(self, path, load_optimizer=True, parse_opt=False):
+        """加载模型优化器参数之类的"""
+        state_dict = torch.load(path)
+        if "model" in state_dict:
+            self.faster_rcnn.load_state_dict(state_dict["model"])
+        else:
+            self.faster_rcnn.load_state_dict(state_dict)
+            return self
+        # 如果加载配置文件
+        if parse_opt:
+            OPT._parse(state_dict["config"])
+        # 如果加载优化器
+        if "optimizer" in state_dict and load_optimizer:
+            self.optimizer.load_state_dict(state_dict["optimizer"])
+        return self
 
 
 def _smooth_l1_loss(x, t, in_weight, sigma):
