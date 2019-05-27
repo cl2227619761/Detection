@@ -100,9 +100,9 @@ def train(**kwargs):
         trainer.train()
 
 
-def main():
-    """调试"""
-    train()
+# def main():
+#     """调试"""
+#     train()
     # testset = TestDataset(opt=OPT)
     # test_dataloader = DataLoader(
     #     dataset=testset, batch_size=1, shuffle=False,
@@ -115,6 +115,11 @@ def main():
     # import ipdb; ipdb.set_trace()
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
+
+if __name__ == "__main__":
+    import fire
+
+    fire.Fire()
