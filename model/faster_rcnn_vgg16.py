@@ -83,7 +83,7 @@ class FasterRCNNVGG16(FasterRCNN):
 
         rpn = RegionProposalNetwork()
         head = VGG16RoIHead(
-            n_class=n_fg_class + 1, roi_size=7,
+            n_class=n_fg_class + 1, roi_size=OPT.roi_size,
             spatial_scale=1. / self.feat_stride, classifier=classifier
         )
         super(FasterRCNNVGG16, self).__init__(

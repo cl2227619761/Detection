@@ -46,7 +46,6 @@ class ProposalCreator:
         else:
             n_pre_nms = self.n_test_pre_nms
             n_post_nms = self.n_test_post_nms
-
         roi = loc2bbox(anchor, loc)
         roi[:, slice(0, 4, 2)] = np.clip(
             roi[:, slice(0, 4, 2)], a_min=0, a_max=img_size[0]

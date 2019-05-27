@@ -19,6 +19,11 @@ class RoIPooling2D(nn.Module):
         rois = indices_and_rois.data.float()
         rois[:, 1:].mul_(self.spatial_scale)
         rois = rois.long()
+        # import ipdb; ipdb.set_trace()
+        # if rois[:, 1::2].max() > x.shape[3]:
+        #     rois[:, 1::2] = rois[:, 1::2].clamp(min=0, max=x.shape[3])
+        # if rois[:, 2::2].max() > x.shape[2]:
+        #     rois[:, 2::2] = rois[:, 2::2].clamp(min=0, max=x.shape[2])
         num_rois = rois.size(0)
         for i in range(num_rois):
             # 对每一个roi都进行计算
@@ -28,5 +33,6 @@ class RoIPooling2D(nn.Module):
                 ..., roi[2]:(roi[4] + 1), roi[1]:(roi[3] + 1)
             ]
             output.append(self.adaptive_max_pool(roi_feature))
+
         output = torch.cat(output, 0)
         return output

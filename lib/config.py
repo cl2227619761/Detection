@@ -14,7 +14,7 @@ class Config:
     valtest_split = "ALL_valtest"
 
     # 线程数
-    num_workers = 6
+    num_workers = 8
     # 锚点框生成相关
     base_size = 16
     ratios = [0.5, 1, 2]
@@ -37,8 +37,13 @@ class Config:
     rpn_sigma = 3.
     roi_sigma = 1.
 
+    roi_size = 7
+
     # 绘制损失函数图相关
     plot_every = 40
+
+    # 计算mAP的相关参数
+    test_num = 51
 
     def _state_dict(self):
         """"返回Config对象的属性，不包括那些以下划线开头的属性。返回的是字典"""

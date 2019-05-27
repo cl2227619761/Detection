@@ -165,6 +165,15 @@ class FasterRCNNTrainer(nn.Module):
         self.update_meters(losses)
         return losses  # 返回损失
 
+    def val_step(self, imgs, sizes, bboxes, labels):
+        """验证过程"""
+        self.optimizer.zero_grad()
+        scale = imgs.shape[2] / (sizes[0].item())
+        with torch.no_grad():
+            losses = self.forward(imgs, bboxes, labels, scale)
+            self.update_meters(losses)
+        return losses
+
     def update_meters(self, losses):
         """对各个损失分别求均值"""
         # 由于train_step返回的是nametuple形式的损失，所以要先变成字典
