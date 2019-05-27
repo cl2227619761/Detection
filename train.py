@@ -48,7 +48,6 @@ def train(**kwargs):
     """训练过程"""
     # 加载配置文件中的各种参数设置
     OPT._parse(kwargs)
-
     # 数据集
     dataset = Dataset(opt=OPT)
     print("加载数据集")
