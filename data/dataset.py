@@ -8,7 +8,7 @@ import sys
 sys.path.append("../")
 
 from data.bbox_dataset import BboxDataset
-from data.util import Transform, preprocess
+from data.util import Transform, preprocess, resize_bbox
 from lib.config import OPT
 
 
@@ -52,9 +52,15 @@ class TestDataset:
         return len(self.dataset)
 
     def __getitem__(self, index):
-        ori_img, bbox, label, difficult = self.dataset[index]
+        ori_img, gt_bbox, label, difficult = self.dataset[index]
+        height, width = ori_img.shape[1:]
         img = preprocess(ori_img)
-        return img, ori_img.shape[1:], bbox, label, difficult
+        new_height, new_width = img.shape[1:]
+        bbox = resize_bbox(
+            bbox=gt_bbox, in_size=(height, width),
+            out_size=(new_height, new_width)
+        )
+        return img, ori_img.shape[1:], gt_bbox, bbox, label, difficult
 
 
 def main():
