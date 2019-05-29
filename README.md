@@ -1,7 +1,6 @@
 # Detection
 faster rcnn pytorch版本，对自定义数据进行训练
 
-<<<<<<< HEAD
 文件树：
 -data
     --bbox_dataset.py: 从xml文件提取出bbox, label, difficult等信息
@@ -28,7 +27,5 @@ faster rcnn pytorch版本，对自定义数据进行训练
     --saved_model: 用来放训练好的模型
 
 训练过程(...为需要配置的参数，参考config.py)：
-=======
 使用方法(...是config里面的一些配置参数)：
->>>>>>> origin/ALL
 python train.py train --...
