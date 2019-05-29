@@ -27,11 +27,12 @@ faster rcnn pytorch版本，对自定义数据进行训练
     --roi_module.py: roi pooling函数
     --faster_rcnn_vgg16.py: 特征提取网络为VGG16的faster_rcnn，继承于faster_rcnn
 
--trainer.py: 将训练过程封装进了一个类里面
--train.py: 最终启动训练，验证，测试的脚本
--results
+-trainer.py: 将训练过程封装进了一个类里面  
+-train.py: 最终启动训练，验证，测试的脚本  
+-results  
+
     --saved_model: 用来放训练好的模型
 
-训练过程(...为需要配置的参数，参考config.py)：
-使用方法(...是config里面的一些配置参数)：
+## 训练过程(...为需要配置的参数，参考config.py)：
+
 python train.py train --...
