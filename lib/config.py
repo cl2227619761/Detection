@@ -13,6 +13,7 @@ class Config:
     train_split = "ALL_train"
     valtest_split = "ALL_valtest"
 
+
     # 线程数
     num_workers = 8
     # 锚点框生成相关
@@ -30,6 +31,7 @@ class Config:
 
     # 网络超参数
     lr = 1e-3
+    lr_decay = 0.1
     epoch = 14
     weight_decay = 0.0005  # 权重衰减
     use_adam = False  # 是否使用adam优化器
@@ -44,6 +46,14 @@ class Config:
 
     # 计算mAP的相关参数
     test_num = 51
+
+    # 损失函数要写入的csv文件路径
+    train_loss_csv_path = "D:/code/Detection/results/train_loss.csv"
+    val_loss_csv_path = "D:/code/Detection/results/val_loss.csv"
+    # mAP要写入的csv文件路径
+    map_csv_path = "D:/code/Detection/results/map.csv"
+    # 模型存储路径
+    model_save_path = "D:/code/Detection/results/saved_model/model.pth"
 
     def _state_dict(self):
         """"返回Config对象的属性，不包括那些以下划线开头的属性。返回的是字典"""
@@ -68,3 +78,9 @@ class Config:
 
 
 OPT = Config()
+
+
+# if __name__ == "__main__":
+#     import fire
+
+#     fire.Fire(Config)
