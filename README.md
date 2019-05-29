@@ -1,7 +1,9 @@
 # Detection
+
 faster rcnn pytorch版本，对自定义数据进行训练
 
-文件树：
+## 文件树：
+
 -data
     --bbox_dataset.py: 从xml文件提取出bbox, label, difficult等信息
     --dataset.py: 利用bbox_dataset.py以及util.py里面的工具，生成数据集的函数
