@@ -18,7 +18,8 @@ class RegionProposalNetwork(nn.Module):
     """候选框生成网络"""
 
     def __init__(
-            self, feature_channels=512, mid_channels=512,
+            self, feature_channels=OPT.feature_channels,
+            mid_channels=OPT.mid_channels,
             ratios=OPT.ratios, anchor_scales=OPT.anchor_scales,
             sub_sample=OPT.sub_sample,
             proposal_creator_params=dict()
