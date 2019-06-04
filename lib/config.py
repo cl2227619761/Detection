@@ -22,6 +22,9 @@ class Config:
     anchor_scales = [8, 16, 32]
     # 网络相关
     sub_sample = 16
+    # rpn卷积层的输入输出
+    feature_channels = 256
+    mid_channels = 256
 
     # 分类相关
     n_fg_class = 2  # 前景类别的总数量
