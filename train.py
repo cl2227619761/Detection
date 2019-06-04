@@ -14,6 +14,7 @@ from lib.config import OPT
 from lib.csv_tool import loss_writer, map_writer
 from data.dataset import Dataset, TestDataset
 from model.faster_rcnn_vgg16 import FasterRCNNVGG16
+from model.faster_rcnn_resnet import FasterRCNNResNet16
 from model.utils.array_tool import scalar
 from trainer import FasterRCNNTrainer
 from lib.eval_tool import calc_map
@@ -80,7 +81,8 @@ def train(**kwargs):
         num_workers=OPT.num_workers, pin_memory=True
     )
     # 模型
-    faster_rcnn = FasterRCNNVGG16()
+    # faster_rcnn = FasterRCNNVGG16()
+    faster_rcnn = FasterRCNNResNet16()
     print("模型加载完成")
     trainer = FasterRCNNTrainer(faster_rcnn).cuda()
     train_loss = []
