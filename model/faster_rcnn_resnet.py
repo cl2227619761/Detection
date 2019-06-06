@@ -91,7 +91,6 @@ def main():
     # bboxes, labels, scores = faster_rcnn.predict([img], [size])
     # print(faster_rcnn.n_class)
     extractor, classifier = decom_resnet18()
-    extractor = list(extractor.children())
     import ipdb; ipdb.set_trace()
 
 
